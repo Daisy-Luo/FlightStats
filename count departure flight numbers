@@ -1,0 +1,75 @@
+# -*-coding: utf-8 -*-
+
+import pandas as pd
+from selenium import webdriver
+
+url = 'https://www.flightstats.com/v2/historical-flight/departing/PEK/2019/07/01'
+flight_url = 'https://www.flightstats.com/v2/account/login'
+cookies = [
+{
+    "domain": ".flightstats.com",
+    "expirationDate": 1594731076,
+    "hostOnly": False,
+    "httpOnly": False,
+    "name": "xxx",
+    "path": "/"
+},
+{
+    "domain": "www.flightstats.com",
+    "hostOnly": True,
+    "httpOnly": False,
+    "name": "xxx",
+    "path": "/"
+},
+{
+    "domain": "www.flightstats.com",
+    "expirationDate": 1597323016.82898,
+    "hostOnly": True,
+    "httpOnly": True,
+    "name": "flightstats.sid",
+    "path": "/",
+    "sameSite": "unspecified",
+    "secure": True,
+    "session": False,
+    "storeId": "0",
+    "value": "xxx",
+    "id": 3
+}
+]
+
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36',
+           'Host': 's1634.t.eloqua.com'}
+
+browser = webdriver.Chrome()
+browser.get(url)
+browser.implicitly_wait(5)
+browser.delete_all_cookies()
+for cookie in cookies:
+    browser.add_cookie(cookie)
+browser.get_cookies()
+cities = ['PEK','PVG','CAN','CTU','SZX','KMG', 'XIY','SHA','CKG', 'HGH','NKG','CGO','XMN','WUH','CSX','TAO','HAK','URC','TSN','KWE','HRB']
+year = 2020
+months = [7]
+days = [23, 24, 25, 26, 27, 28]
+departure_flight = pd.DataFrame(columns=['year', 'month', 'day', 'city', 'flights'])
+for city in cities:
+    for month in months:
+        for day in days:
+            one_note = []
+            url = 'https://www.flightstats.com/v2/historical-flight/departing/%s/%s/%s/%s' % (city, year, month, day)
+            browser.get(url)
+            browser.implicitly_wait(50)
+            browser.find_element_by_xpath('//*[@id="content"]/div/div/main/div/div[2]/div[1]/div/ul/li[7]/a').click()
+            a = browser.find_element_by_xpath('//*[@id="content"]/div/div/main/div/div[2]/div[1]/div/ul/li[5]/a').text
+            b = browser.find_elements_by_class_name('flights-list-light-text')
+            one_note.append(year)
+            one_note.append(month)
+            one_note.append(day)
+            one_note.append(city)
+            one_note.append((int(a)-1) * 25 + len(b))
+            departure_flight.loc[len(departure_flight)] = one_note
+            browser.implicitly_wait(30)
+    print(departure_flight)
+departure_flight.to_excel('flights.xlsx')
+
+browser.close()
